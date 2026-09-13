@@ -21,11 +21,51 @@ from mcp_server import MCPAcademicServer
 from prompts import (
     CHATBOT_BASELINE_PROMPT,
     REACT_AGENT_SYSTEM_PROMPT,
+    FINAL_RESPONSE_SYSTEM_PROMPT,
     MAX_ITERATIONS
 )
 from providers import get_llm_provider
 
 load_dotenv()
+
+def clean_final_answer(text: str) -> str:
+    """Loại bỏ các đoạn suy luận kỹ thuật Thought/Action nếu có, chỉ giữ lại câu trả lời trực tiếp cho người dùng"""
+    if not text:
+        return ""
+    markers = [
+        "**Phản hồi cho người dùng:**",
+        "**Phản hồi gửi người dùng:**",
+        "**Phản hồi:**",
+        "Phản hồi cho người dùng:",
+        "Phản hồi:"
+    ]
+    for marker in markers:
+        if marker in text:
+            parts = text.split(marker, 1)
+            if len(parts) > 1 and parts[1].strip():
+                return parts[1].strip()
+                
+    lines = text.split("\n")
+    cleaned_lines = []
+    skip_mode = False
+    for line in lines:
+        lower_line = line.strip().lower()
+        if lower_line.startswith("**thought:**") or lower_line.startswith("thought:") or lower_line.startswith("**action:**") or lower_line.startswith("action:"):
+            skip_mode = True
+            continue
+        if skip_mode:
+            if lower_line.startswith("**phản hồi") or lower_line.startswith("phản hồi"):
+                skip_mode = False
+                continue
+            if line.strip() == "---" or lower_line.startswith("chào bạn") or lower_line.startswith("dạ,") or lower_line.startswith("dựa trên") or lower_line.startswith("tôi đã") or lower_line.startswith("bạn có"):
+                skip_mode = False
+                cleaned_lines.append(line)
+                continue
+            continue
+        cleaned_lines.append(line)
+        
+    result = "\n".join(cleaned_lines).strip()
+    return result if result else text
 
 def load_test_cases():
     """Tải danh sách 5 test cases từ config/test_cases.json hoặc config/test_cases.example.json"""
@@ -64,29 +104,44 @@ def run_baseline_chatbot(user_query: str, provider):
 def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) -> list:
     """
     [REACT AGENT LOOP] Thực thi vòng lặp Thought -> Action -> Observation với MCP Server
-    Trả về danh sách trace log của phiên thực thi.
+    Hỗ trợ chuỗi suy luận đa bước thực thụ (Multi-step Tool Calling qua nhiều vòng lặp liên tiếp).
     """
     print(f"\n🤖 [REACT AGENT] Câu hỏi: {user_query}")
     
     step = 0
     trace_logs = []
     tools_list = mcp_server.list_tools()
+    current_prompt = f"Yêu cầu từ người dùng: {user_query}\n"
     
     while step < MAX_ITERATIONS:
         step += 1
         step_start_time = time.time()
         print(f"\n--- 🔄 Vòng lặp ReAct Loop (Step {step}/{MAX_ITERATIONS}) ---")
         
-        # Gọi LLM với Native Tool Calling Specs
-        llm_response = provider.generate_with_tools(user_query, tools_list, system_prompt=REACT_AGENT_SYSTEM_PROMPT)
+        # Gọi LLM với Native Tool Calling Specs và ngữ cảnh tích lũy các bước trước
+        llm_response = provider.generate_with_tools(current_prompt, tools_list, system_prompt=REACT_AGENT_SYSTEM_PROMPT)
         latency_ms = round((time.time() - step_start_time) * 1000, 2)
         
         thought = llm_response.get("thought", "Đang suy luận...")
         print(f"🧠 [Thought]: {thought}")
         
-        # Trường hợp 1: LLM quyết định trả lời bằng văn bản trực tiếp
+        # Trường hợp 1: LLM quyết định trả lời bằng văn bản trực tiếp (kết luận mục tiêu)
         if llm_response.get("type") == "text":
-            final_content = llm_response.get("content", "")
+            raw_content = llm_response.get("content", "").strip()
+            
+            # Nếu LLM vô tình sinh đoạn văn bản mô tả kỹ thuật kiểu '(Thực hiện gọi công cụ...)'
+            if ("thực hiện" in raw_content.lower() and "công cụ" in raw_content.lower()) or raw_content.startswith("*("):
+                try:
+                    synth_prompt = (
+                        f"Yêu cầu ban đầu của người dùng: '{user_query}'\n"
+                        f"Dữ liệu và kết quả các bước đã thực hiện:\n{current_prompt}\n"
+                        f"Hãy trả lời trực tiếp cho người dùng kết quả tài chính, lời khuyên và xác nhận các khoản đã ghi nhận."
+                    )
+                    raw_content = provider.generate(synth_prompt, system_prompt=FINAL_RESPONSE_SYSTEM_PROMPT)
+                except Exception:
+                    pass
+                    
+            final_content = clean_final_answer(raw_content)
             print(f"🏁 [Final Answer]: {final_content}")
             trace_logs.append({
                 "step": step,
@@ -108,39 +163,8 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
             # Thực thi Tool qua MCP Server
             mcp_result = mcp_server.call_tool(tool_name, arguments)
             obs_data = mcp_result.get("result", {})
-            
-            if not obs_data:
-                print(f"👁️ [Observation từ MCP Server]: {{}}")
-                print(f"⚠️ [CHÚ Ý]: MCP Server trả về kết quả rỗng! Học viên cần hoàn thành TODO 2.1 trong 'src/mcp_server.py'.")
-                final_answer = "Chưa thể trả lời chi tiết do chưa nhận được dữ liệu từ MCP Server (hãy hoàn thành TODO 2.1)."
-            else:
-                obs_str = json.dumps(obs_data, ensure_ascii=False)
-                print(f"👁️ [Observation từ MCP Server]: {obs_str}")
-                
-                # Tổng hợp Final Answer từ kết quả Observation thực tế
-                if obs_data.get("status") == "SUCCESS":
-                    if "message" in obs_data and "transaction_id" in obs_data:
-                        # Kết quả trực tiếp từ add_expense
-                        final_answer = obs_data["message"]
-                    else:
-                        # Các tools phân tích và quản lý (query_expense, get_total_financial_summary, manage_category, list_categories)
-                        synthesis_prompt = (
-                            f"Câu hỏi của người dùng: '{user_query}'\n"
-                            f"Kết quả thực thi từ công cụ '{tool_name}' (Observation): {obs_str}\n"
-                            f"Hãy dựa vào kết quả Observation trên để đưa ra câu trả lời chi tiết, chính xác, phân tích số liệu tài chính rõ ràng và tự nhiên cho người dùng."
-                        )
-                        try:
-                            synth_res = provider.generate(synthesis_prompt, system_prompt=REACT_AGENT_SYSTEM_PROMPT)
-                            if synth_res and not synth_res.startswith("[") and "Error" not in synth_res:
-                                final_answer = synth_res
-                            else:
-                                final_answer = obs_data.get("message", f"Đã hoàn tất xử lý qua MCP Server: {obs_str}")
-                        except Exception:
-                            final_answer = obs_data.get("message", f"Đã hoàn tất xử lý qua MCP Server: {obs_str}")
-                elif obs_data.get("status") == "NOT_FOUND":
-                    final_answer = obs_data.get("message", "Không tìm thấy thông tin danh mục chi tiêu yêu cầu.")
-                else:
-                    final_answer = f"Phản hồi từ công cụ: {json.dumps(obs_data, ensure_ascii=False)}"
+            obs_str = json.dumps(obs_data, ensure_ascii=False)
+            print(f"👁️ [Observation từ MCP Server]: {obs_str}")
             
             trace_logs.append({
                 "step": step,
@@ -152,19 +176,39 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 "latency_ms": latency_ms
             })
             
-            # Kết thúc vòng lặp sau khi hoàn tất Observation và xuất Final Answer
-            print(f"🧠 [Thought]: Đã nhận được dữ liệu từ MCP Server. Tổng hợp kết quả phản hồi.")
-            print(f"🏁 [Final Answer]: {final_answer}")
+            # Nạp kết quả Observation vào ngữ cảnh để LLM tiếp tục suy luận ở Step tiếp theo
+            current_prompt += (
+                f"\n[Bước {step}]:\n"
+                f"- Thought: {thought}\n"
+                f"- Action: {tool_name}({json.dumps(arguments, ensure_ascii=False)})\n"
+                f"- Observation: {obs_str}\n"
+                f"Hướng dẫn suy luận: Hãy phân tích kết quả Observation trên. Nếu cần thực hiện tiếp hành động khác (ví dụ gọi thêm công cụ như add_expense, query_expense...), hãy tiếp tục phát sinh Tool Call. Nếu đã hoàn thành đầy đủ mục tiêu của người dùng, hãy phản hồi câu trả lời cuối cùng trực tiếp bằng văn bản (Final Answer) mà không gọi thêm công cụ. Tuyệt đối không viết 'Thought:' hay 'Action:' trong câu trả lời văn bản.\n"
+            )
+            # Tiếp tục vòng lặp để LLM xem xét Observation và quyết định bước tiếp theo!
+
+    # Nếu sau MAX_ITERATIONS chưa có văn bản kết luận, tổng hợp lần cuối
+    if not any(t.get("action_type") == "FINAL_ANSWER" for t in trace_logs):
+        synthesis_prompt = (
+            f"Yêu cầu từ người dùng: '{user_query}'\n"
+            f"Quá trình thực thi qua các công cụ:\n{current_prompt}\n"
+            f"Hãy đưa ra câu trả lời trực tiếp, rõ ràng cho người dùng về kết quả cuối cùng. "
+            f"Tuyệt đối không viết nhãn 'Thought:' hay 'Action:'."
+        )
+        try:
+            synth_res = provider.generate(synthesis_prompt, system_prompt=FINAL_RESPONSE_SYSTEM_PROMPT)
+            final_ans = clean_final_answer(synth_res)
+        except Exception:
+            final_ans = "Đã hoàn tất xử lý các thao tác tài chính theo yêu cầu của bạn."
             
-            trace_logs.append({
-                "step": step + 1,
-                "query": user_query,
-                "action_type": "FINAL_ANSWER",
-                "thought": "Tổng hợp kết quả từ MCP Server thành công.",
-                "output": final_answer,
-                "latency_ms": 10.0
-            })
-            break
+        print(f"🏁 [Final Answer]: {final_ans}")
+        trace_logs.append({
+            "step": step + 1,
+            "query": user_query,
+            "action_type": "FINAL_ANSWER",
+            "thought": "Tổng hợp kết luận sau chuỗi ReAct đa bước.",
+            "output": final_ans,
+            "latency_ms": 10.0
+        })
 
     return trace_logs
 
