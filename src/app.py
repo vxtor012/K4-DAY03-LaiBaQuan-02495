@@ -119,19 +119,45 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 
                 # Tổng hợp Final Answer từ kết quả Observation thực tế
                 if obs_data.get("status") == "SUCCESS":
-                    if "data" in obs_data:
+                    if "message" in obs_data and "remaining_budget" in obs_data:
+                        # Kết quả từ add_expense
+                        final_answer = obs_data["message"]
+                    elif "data" in obs_data and "remaining_budget" in obs_data["data"]:
+                        # Kết quả từ query_expense
                         d = obs_data["data"]
-                        final_answer = (
-                            f"Kết quả tra cứu cho sinh viên {obs_data.get('student_id', '')} ({d.get('full_name', '')}): "
-                            f"Lớp {d.get('class', '')}, GPA: {d.get('gpa', '')}, Email: {d.get('email', '')}, "
-                            f"Trạng thái: {d.get('status', '')}, Cố vấn: {d.get('advisor', '')}."
+                        cat = obs_data.get("category", "")
+                        month = obs_data.get("month", "")
+                        
+                        synthesis_prompt = (
+                            f"Câu hỏi của người dùng: '{user_query}'\n"
+                            f"Dữ liệu Observation từ công cụ: Danh mục '{cat}' ({month}) có ngân sách {int(d.get('allocated_budget', 0)):,} VND, "
+                            f"đã chi {int(d.get('spent', 0)):,} VND, số dư còn lại {int(d.get('remaining_budget', 0)):,} VND ({d.get('status', '')}).\n"
+                            f"Hãy trả lời người dùng một cách chính xác, giải quyết trọn vẹn câu hỏi và phân tích số dư ngân sách."
                         )
+                        try:
+                            synth_res = provider.generate(synthesis_prompt, system_prompt=REACT_AGENT_SYSTEM_PROMPT)
+                            if synth_res and not synth_res.startswith("[") and "Error" not in synth_res:
+                                final_answer = synth_res
+                            else:
+                                final_answer = (
+                                    f"Tình hình chi tiêu danh mục '{cat}' ({month}): "
+                                    f"Ngân sách cấp: {int(d.get('allocated_budget', 0)):,} VND, "
+                                    f"Đã chi: {int(d.get('spent', 0)):,} VND, "
+                                    f"Số dư còn lại: {int(d.get('remaining_budget', 0)):,} VND ({d.get('status', '')})."
+                                )
+                        except Exception:
+                            final_answer = (
+                                f"Tình hình chi tiêu danh mục '{cat}' ({month}): "
+                                f"Ngân sách cấp: {int(d.get('allocated_budget', 0)):,} VND, "
+                                f"Đã chi: {int(d.get('spent', 0)):,} VND, "
+                                f"Số dư còn lại: {int(d.get('remaining_budget', 0)):,} VND ({d.get('status', '')})."
+                            )
                     elif "message" in obs_data:
                         final_answer = obs_data["message"]
                     else:
                         final_answer = f"Đã hoàn tất xử lý qua MCP Server: {json.dumps(obs_data, ensure_ascii=False)}"
                 elif obs_data.get("status") == "NOT_FOUND":
-                    final_answer = obs_data.get("message", "Không tìm thấy thông tin sinh viên yêu cầu.")
+                    final_answer = obs_data.get("message", "Không tìm thấy thông tin danh mục chi tiêu yêu cầu.")
                 else:
                     final_answer = f"Phản hồi từ công cụ: {json.dumps(obs_data, ensure_ascii=False)}"
             
@@ -164,7 +190,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
 
 if __name__ == "__main__":
     print("==========================================================")
-    print("🏫 VINUNI AI COURSE - DAY 03 LAB: CHATBOT VS REACT AGENT")
+    print("💰 PERSONAL EXPENSE RE-ACT AGENT (MCP ENHANCED)")
     print("==========================================================")
     
     provider = get_llm_provider()
@@ -179,13 +205,13 @@ if __name__ == "__main__":
     if "--interactive" in sys.argv:
         print("🎮 [INTERACTIVE MODE] Trò chuyện trực tiếp với ReAct Agent:")
         print("💡 Gợi ý câu hỏi thử nghiệm:")
-        print("   - Câu hỏi chung: 'Quy chế học vụ VinUni yêu cầu bao nhiêu tín chỉ?'")
-        print("   - Tra cứu học vụ: 'Hãy tra cứu thông tin học vụ của sinh viên SV2026001'")
-        print("   - Đặt lịch hẹn: 'Đặt lịch hẹn tư vấn cho SV2026001 vào 14:00 ngày 15/09/2026'")
+        print("   - Câu hỏi chung: 'Quy tắc quản lý chi tiêu 50/30/20 là gì?'")
+        print("   - Tra cứu chi tiêu: 'Hãy tra cứu tình hình chi tiêu của danh mục Ăn uống'")
+        print("   - Ghi nhận chi tiêu: 'Ghi lại khoản chi 45000 VNĐ cho Cà phê sáng vào danh mục Ăn uống'")
         print("   - Gõ 'exit' hoặc 'quit' để kết thúc phiên trò chuyện.\n")
         while True:
             try:
-                user_input = input("👤 Sinh viên hỏi: ").strip()
+                user_input = input("👤 Người dùng hỏi: ").strip()
                 if not user_input or user_input.lower() in ["exit", "quit"]:
                     print("👋 Tạm biệt! Kết thúc phiên trò chuyện.")
                     break
@@ -227,7 +253,7 @@ if __name__ == "__main__":
         print("  2. Chạy toàn bộ Test Cases:    python src/app.py --all\n")
         
         sample_query = tests[1]["question"]
-        print(f"--- 🏁 DEMO CHẠY THỬ 1 TEST CASE MẪU (TC02: Tra cứu học vụ) ---")
+        print(f"--- 🏁 DEMO CHẠY THỬ 1 TEST CASE MẪU (TC02: Tra cứu chi tiêu) ---")
         logs = run_react_agent(sample_query, provider, mcp_server)
         save_waterfall_trace(logs)
         print("\n💡 Hãy thử ngay lệnh: python src/app.py --interactive để chat trực tiếp!")

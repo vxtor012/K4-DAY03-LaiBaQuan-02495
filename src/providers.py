@@ -37,26 +37,40 @@ class MockOfflineProvider(BaseLLMProvider):
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         prompt_lower = prompt.lower()
         
-        # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
+        # Mô phỏng nhận diện intent gọi Tool cho Quản lý Chi tiêu Cá nhân
+        if "ghi lại" in prompt_lower or "thêm" in prompt_lower or "khoản chi" in prompt_lower:
             return {
                 "type": "tool_call",
-                "tool_name": "schedule_appointment",
-                "arguments": {"student_id": "SV2026001", "datetime_str": "14:00 15/09/2026", "advisor_name": "PGS.TS Nguyễn Văn A"},
-                "thought": "Người dùng yêu cầu đặt lịch hẹn tư vấn cho sinh viên SV2026001. Tôi sẽ gọi tool schedule_appointment."
+                "tool_name": "add_expense",
+                "arguments": {"amount": 45000, "category": "Ăn uống", "note": "Cà phê sáng", "date": "13/09/2026"},
+                "thought": "Người dùng yêu cầu ghi nhận khoản chi tiêu mới. Tôi sẽ gọi tool add_expense."
             }
-        elif "sv2026001" in prompt_lower or "tra cứu" in prompt_lower:
+        elif "mua sắm" in prompt_lower or "áo khoác" in prompt_lower:
             return {
                 "type": "tool_call",
-                "tool_name": "academic_query",
-                "arguments": {"student_id": "SV2026001"},
-                "thought": "Người dùng muốn tra cứu thông tin học vụ của sinh viên SV2026001. Tôi sẽ gọi tool academic_query."
+                "tool_name": "query_expense",
+                "arguments": {"category": "Mua sắm", "month": "09/2026"},
+                "thought": "Người dùng muốn kiểm tra ngân sách danh mục Mua sắm để xem có đủ mua áo khoác hay không. Tôi sẽ gọi tool query_expense."
+            }
+        elif "du hành vũ trụ" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "query_expense",
+                "arguments": {"category": "Du hành vũ trụ", "month": "09/2026"},
+                "thought": "Người dùng yêu cầu kiểm tra danh mục 'Du hành vũ trụ'. Tôi sẽ gọi tool query_expense."
+            }
+        elif "ăn uống" in prompt_lower or "tra cứu" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "query_expense",
+                "arguments": {"category": "Ăn uống", "month": "09/2026"},
+                "thought": "Người dùng muốn tra cứu tình hình chi tiêu của danh mục Ăn uống. Tôi sẽ gọi tool query_expense."
             }
         else:
             return {
                 "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
+                "content": "[Mock Agent Response]: Quy tắc 50/30/20 chia thu nhập thành: 50% Nhu cầu thiết yếu, 30% Mong muốn cá nhân, và 20% Tiết kiệm/Đầu tư để đảm bảo an toàn tài chính.",
+                "thought": "Câu hỏi chung về nguyên tắc tài chính, trả lời trực tiếp không cần gọi Tool."
             }
 
 
