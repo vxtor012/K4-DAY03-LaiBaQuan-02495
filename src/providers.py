@@ -38,7 +38,28 @@ class MockOfflineProvider(BaseLLMProvider):
         prompt_lower = prompt.lower()
         
         # Mô phỏng nhận diện intent gọi Tool cho Quản lý Chi tiêu Cá nhân
-        if "ghi lại" in prompt_lower or "thêm" in prompt_lower or "khoản chi" in prompt_lower:
+        if "tổng" in prompt_lower and ("ngân sách" in prompt_lower or "chi tiêu" in prompt_lower or "tiền" in prompt_lower or "ví" in prompt_lower):
+            return {
+                "type": "tool_call",
+                "tool_name": "get_total_financial_summary",
+                "arguments": {"month": "09/2026"},
+                "thought": "Người dùng muốn xem báo cáo tổng quan tài chính toàn bộ ví. Tôi sẽ gọi tool get_total_financial_summary."
+            }
+        elif "danh sách" in prompt_lower or "các danh mục" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "list_categories",
+                "arguments": {"include_details": True},
+                "thought": "Người dùng muốn xem danh sách các danh mục chi tiêu trong ví. Tôi sẽ gọi tool list_categories."
+            }
+        elif "hạn mức" in prompt_lower and ("cập nhật" in prompt_lower or "thêm danh mục" in prompt_lower or "thiết lập" in prompt_lower):
+            return {
+                "type": "tool_call",
+                "tool_name": "manage_category",
+                "arguments": {"category": "Giải trí", "allocated_budget": 1500000},
+                "thought": "Người dùng muốn quản lý hạn mức ngân sách của danh mục. Tôi sẽ gọi tool manage_category."
+            }
+        elif "ghi lại" in prompt_lower or "thêm" in prompt_lower or "khoản chi" in prompt_lower:
             return {
                 "type": "tool_call",
                 "tool_name": "add_expense",

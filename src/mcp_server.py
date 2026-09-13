@@ -80,7 +80,15 @@ if __name__ == "__main__":
     test_add = server.call_tool("add_expense", {"amount": 45000, "category": "Ăn uống", "note": "Cà phê sáng"})
     print(f"   Phản hồi JSON-RPC: {json.dumps(test_add, ensure_ascii=False, indent=2)}")
 
-    if test_query.get("result") and test_add.get("result"):
-        print("\n🎉 [PASS CHECKPOINT 2]: MCP Server đã xử lý và đóng gói JSON-RPC 2.0 hoàn toàn chính xác!")
+    print("\n--- 🧪 TEST 3: Gọi Tool 'get_total_financial_summary' qua MCP ---")
+    test_summary = server.call_tool("get_total_financial_summary", {"month": "09/2026"})
+    print(f"   Phản hồi JSON-RPC: {json.dumps(test_summary, ensure_ascii=False, indent=2)}")
+
+    print("\n--- 🧪 TEST 4: Gọi Tool 'manage_category' qua MCP ---")
+    test_manage = server.call_tool("manage_category", {"category": "Giải trí", "allocated_budget": 1200000})
+    print(f"   Phản hồi JSON-RPC: {json.dumps(test_manage, ensure_ascii=False, indent=2)}")
+
+    if test_query.get("result") and test_add.get("result") and test_summary.get("result") and test_manage.get("result"):
+        print("\n🎉 [PASS CHECKPOINT 2]: MCP Server đã công bố và xử lý đầy đủ 5 Tools chuẩn JSON-RPC 2.0 hoàn toàn chính xác!")
     else:
         print("\n❌ [FAIL]: call_tool() chưa trả về đầy đủ kết quả.")
