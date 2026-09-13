@@ -148,6 +148,8 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 "query": user_query,
                 "action_type": "FINAL_ANSWER",
                 "thought": thought,
+                "action": "Final Answer",
+                "final_answer": final_content,
                 "output": final_content,
                 "latency_ms": latency_ms
             })
@@ -170,6 +172,8 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 "step": step,
                 "query": user_query,
                 "action_type": "TOOL_EXECUTION",
+                "thought": thought,
+                "action": f"{tool_name}({json.dumps(arguments, ensure_ascii=False)})",
                 "tool_name": tool_name,
                 "arguments": arguments,
                 "observation": obs_data,
@@ -206,6 +210,8 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
             "query": user_query,
             "action_type": "FINAL_ANSWER",
             "thought": "Tổng hợp kết luận sau chuỗi ReAct đa bước.",
+            "action": "Final Answer",
+            "final_answer": final_ans,
             "output": final_ans,
             "latency_ms": 10.0
         })

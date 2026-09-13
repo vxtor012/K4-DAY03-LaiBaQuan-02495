@@ -30,16 +30,18 @@ Dán 1 đoạn trích xuất log tiêu biểu từ file `docs/trace_waterfall.js
     "step": 1,
     "query": "Ghi lại giúp tôi một khoản chi 45000 VNĐ cho 'Cà phê sáng' vào danh mục 'Ăn uống' ngày 13/09/2026.",
     "action_type": "TOOL_EXECUTION",
+    "thought": "Gemini quyết định gọi công cụ 'add_expense' với tham số: {\"amount\": 45000, \"category\": \"Ăn uống\", \"note\": \"Cà phê sáng\", \"date\": \"13/09/2026\"}",
+    "action": "add_expense({\"amount\": 45000, \"category\": \"Ăn uống\", \"note\": \"Cà phê sáng\", \"date\": \"13/09/2026\"})",
     "tool_name": "add_expense",
     "arguments": {
-      "date": "13/09/2026",
+      "amount": 45000,
       "category": "Ăn uống",
       "note": "Cà phê sáng",
-      "amount": 45000
+      "date": "13/09/2026"
     },
     "observation": {
       "status": "SUCCESS",
-      "transaction_id": "TX-105329",
+      "transaction_id": "TX-545989",
       "amount": 45000.0,
       "category": "Ăn uống",
       "note": "Cà phê sáng",
@@ -48,15 +50,18 @@ Dán 1 đoạn trích xuất log tiêu biểu từ file `docs/trace_waterfall.js
       "remaining_budget": 1505000.0,
       "message": "Đã ghi nhận thành công khoản chi 45,000 VND cho 'Cà phê sáng' vào danh mục 'Ăn uống'. Số dư ngân sách còn lại: 1,505,000 VND."
     },
-    "latency_ms": 833.46
+    "latency_ms": 1152.4
   },
   {
     "step": 2,
     "query": "Ghi lại giúp tôi một khoản chi 45000 VNĐ cho 'Cà phê sáng' vào danh mục 'Ăn uống' ngày 13/09/2026.",
     "action_type": "FINAL_ANSWER",
-    "thought": "Tổng hợp kết quả từ MCP Server thành công.",
-    "output": "Đã ghi nhận thành công khoản chi 45,000 VND cho 'Cà phê sáng' vào danh mục 'Ăn uống'. Số dư ngân sách còn lại: 1,505,000 VND.",
-    "latency_ms": 10.0
+    "thought": "Gemini phản hồi trực tiếp bằng văn bản (không cần gọi công cụ).",
+    "action": "Final Answer",
+    "observation": null,
+    "final_answer": "Đã ghi nhận thành công khoản chi 45,000 VNĐ cho nội dung 'Cà phê sáng' vào danh mục 'Ăn uống' vào ngày 13/09/2026. Thông tin cập nhật của danh mục 'Ăn uống': Đã chi trong tháng: 1,495,000 VNĐ, Số dư ngân sách còn lại: 1,505,000 VNĐ.",
+    "output": "Đã ghi nhận thành công khoản chi 45,000 VNĐ cho nội dung 'Cà phê sáng' vào danh mục 'Ăn uống' vào ngày 13/09/2026. Thông tin cập nhật của danh mục 'Ăn uống': Đã chi trong tháng: 1,495,000 VNĐ, Số dư ngân sách còn lại: 1,505,000 VNĐ.",
+    "latency_ms": 1420.1
   }
 ]
 ```
