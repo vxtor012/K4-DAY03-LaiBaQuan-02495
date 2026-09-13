@@ -1,9 +1,10 @@
 """
-🛠️ TOOL DEFINITIONS & EXECUTION BACKEND
+🛠️ TOOL DEFINITIONS & EXECUTION BACKEND (PERSONAL EXPENSE MANAGEMENT)
 Mã nguồn chứa danh sách Tool Schemas (JSON Schema) và Execution Layer phục vụ cho MCP Server.
 """
 
 import json
+import time
 from typing import Dict, Any
 
 # ==============================================================================
@@ -11,41 +12,51 @@ from typing import Dict, Any
 # ==============================================================================
 
 TOOLS_SCHEMA = [
-    # Tool 1: Đã được định nghĩa mẫu sẵn cho Học viên tham khảo
+    # Tool 1: Tra cứu tình hình chi tiêu và ngân sách theo danh mục
     {
-        "name": "academic_query",
-        "description": "Tra cứu hồ sơ và thông tin học vụ của sinh viên VinUni bằng mã sinh viên.",
+        "name": "query_expense",
+        "description": "Tra cứu tình hình chi tiêu, hạn mức ngân sách và số dư còn lại của một danh mục chi tiêu trong tháng.",
         "parameters": {
             "type": "object",
             "properties": {
-                "student_id": {
+                "category": {
                     "type": "string",
-                    "description": "Mã sinh viên cần tra cứu (ví dụ: 'SV2026001')"
+                    "description": "Tên danh mục chi tiêu cần tra cứu (ví dụ: 'Ăn uống', 'Mua sắm', 'Di chuyển', 'Học tập')"
+                },
+                "month": {
+                    "type": "string",
+                    "description": "Tháng cần tra cứu theo định dạng MM/YYYY (ví dụ: '09/2026')"
                 }
             },
-            "required": ["student_id"]
+            "required": ["category"]
         }
     },
     
-    # --------------------------------------------------------------------------
-    # TODO 1.2: HỌC VIÊN HOÀN THIỆN TOOL SCHEMA CHO 'schedule_appointment'
-    # 🎯 YÊU CẦU THIẾT KẾ SCHEMA (JSON SCHEMA STANDARD):
-    # 1. Tool dùng để đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.
-    # 2. Thiết kế các tham số (properties) để LLM trích xuất:
-    #    - student_id (string): Mã sinh viên cần đặt lịch (ví dụ: 'SV2026001')
-    #    - datetime_str (string): Thời gian hẹn (ví dụ: '14:00 15/09/2026')
-    #    - advisor_name (string): Tên cố vấn học tập
-    # 3. Khai báo danh sách các trường bắt buộc (required).
-    # --------------------------------------------------------------------------
+    # Tool 2: Ghi nhận giao dịch chi tiêu mới vào danh mục
     {
-        "name": "schedule_appointment",
-        "description": "Đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.",
+        "name": "add_expense",
+        "description": "Ghi nhận thêm một khoản giao dịch chi tiêu mới vào danh mục chi tiêu tương ứng.",
         "parameters": {
             "type": "object",
             "properties": {
-                # TODO 1.2: Khai báo các thuộc tính tham số cho Tool tại đây...
+                "amount": {
+                    "type": "number",
+                    "description": "Số tiền chi tiêu bằng VNĐ (ví dụ: 45000, 800000)"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Tên danh mục chi tiêu (ví dụ: 'Ăn uống', 'Mua sắm', 'Di chuyển', 'Học tập')"
+                },
+                "note": {
+                    "type": "string",
+                    "description": "Nội dung hoặc ghi chú của khoản chi (ví dụ: 'Cà phê sáng', 'Áo khoác gió')"
+                },
+                "date": {
+                    "type": "string",
+                    "description": "Ngày phát sinh chi tiêu định dạng DD/MM/YYYY (ví dụ: '13/09/2026')"
+                }
             },
-            "required": [] # TODO 1.2: Khai báo danh sách các trường bắt buộc tại đây...
+            "required": ["amount", "category", "note"]
         }
     }
 ]
@@ -54,58 +65,109 @@ TOOLS_SCHEMA = [
 # 2. MÔ PHỎNG DỮ LIỆU & HÀM THỰC THI TOOL (EXECUTION LAYER)
 # ==============================================================================
 
-MOCK_DATABASE = {
-    "SV2026001": {
-        "full_name": "Nguyễn Văn An",
-        "class": "AI-K4",
-        "gpa": 3.85,
-        "email": "an.nv@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "PGS.TS Nguyễn Văn A"
+MOCK_EXPENSE_DATABASE = {
+    "ĂN UỐNG": {
+        "category_name": "Ăn uống",
+        "allocated_budget": 3000000,
+        "spent": 1450000,
+        "currency": "VND",
+        "month": "09/2026"
     },
-    "SV2026002": {
-        "full_name": "Trần Thị Bình",
-        "class": "AI-K4",
-        "gpa": 3.60,
-        "email": "binh.tt@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "TS. Lê Thị B"
+    "MUA SẮM": {
+        "category_name": "Mua sắm",
+        "allocated_budget": 1500000,
+        "spent": 600000,
+        "currency": "VND",
+        "month": "09/2026"
+    },
+    "DI CHUYỂN": {
+        "category_name": "Di chuyển",
+        "allocated_budget": 500000,
+        "spent": 210000,
+        "currency": "VND",
+        "month": "09/2026"
+    },
+    "HỌC TẬP": {
+        "category_name": "Học tập",
+        "allocated_budget": 1000000,
+        "spent": 350000,
+        "currency": "VND",
+        "month": "09/2026"
     }
 }
 
 
-def execute_academic_query(student_id: str) -> str:
-    """Thực thi tra cứu học vụ theo mã sinh viên"""
-    student = MOCK_DATABASE.get(student_id.strip().upper())
-    if student:
+def execute_query_expense(category: str, month: str = "09/2026") -> str:
+    """Thực thi tra cứu chi tiêu và ngân sách theo danh mục"""
+    key = category.strip().upper()
+    cat_data = MOCK_EXPENSE_DATABASE.get(key)
+    
+    if cat_data:
+        allocated = cat_data["allocated_budget"]
+        spent = cat_data["spent"]
+        remaining = allocated - spent
+        status = "Còn trong hạn mức" if remaining >= 0 else "Đã vượt hạn mức"
+        
         return json.dumps({
             "status": "SUCCESS",
-            "student_id": student_id,
-            "data": student
+            "category": cat_data["category_name"],
+            "month": month,
+            "data": {
+                "allocated_budget": allocated,
+                "spent": spent,
+                "remaining_budget": remaining,
+                "currency": cat_data["currency"],
+                "status": status
+            }
         }, ensure_ascii=False)
     else:
         return json.dumps({
             "status": "NOT_FOUND",
-            "message": f"Không tìm thấy dữ liệu sinh viên có mã '{student_id}'"
+            "message": f"Không tìm thấy danh mục chi tiêu '{category}' trong hệ thống ví."
         }, ensure_ascii=False)
 
 
-def execute_schedule_appointment(student_id: str, datetime_str: str, advisor_name: str = "PGS.TS Nguyễn Văn A") -> str:
-    """Thực thi đặt lịch hẹn tư vấn học vụ"""
+def execute_add_expense(amount: float, category: str, note: str, date: str = "13/09/2026") -> str:
+    """Thực thi ghi nhận khoản chi tiêu mới vào danh mục"""
+    key = category.strip().upper()
+    cat_data = MOCK_EXPENSE_DATABASE.get(key)
+    
+    if cat_data:
+        cat_data["spent"] += float(amount)
+        new_spent = cat_data["spent"]
+        remaining = cat_data["allocated_budget"] - new_spent
+        cat_name = cat_data["category_name"]
+    else:
+        # Nếu danh mục mới, khởi tạo mặc định
+        MOCK_EXPENSE_DATABASE[key] = {
+            "category_name": category.strip(),
+            "allocated_budget": 1000000,
+            "spent": float(amount),
+            "currency": "VND",
+            "month": "09/2026"
+        }
+        new_spent = float(amount)
+        remaining = 1000000 - new_spent
+        cat_name = category.strip()
+        
+    tx_id = f"TX-{int(time.time() * 1000) % 1000000:06d}"
     return json.dumps({
         "status": "SUCCESS",
-        "booking_id": f"BK-{student_id}-99",
-        "student_id": student_id,
-        "datetime": datetime_str,
-        "advisor": advisor_name,
-        "message": f"Đặt lịch thành công cho sinh viên {student_id} với {advisor_name} vào lúc {datetime_str}."
+        "transaction_id": tx_id,
+        "amount": float(amount),
+        "category": cat_name,
+        "note": note,
+        "date": date,
+        "current_spent": new_spent,
+        "remaining_budget": remaining,
+        "message": f"Đã ghi nhận thành công khoản chi {int(amount):,} VND cho '{note}' vào danh mục '{cat_name}'. Số dư ngân sách còn lại: {int(remaining):,} VND."
     }, ensure_ascii=False)
 
 
 # Router gọi tool thực tế
 TOOL_ROUTER = {
-    "academic_query": execute_academic_query,
-    "schedule_appointment": execute_schedule_appointment
+    "query_expense": execute_query_expense,
+    "add_expense": execute_add_expense
 }
 
 def dispatch_tool_call(tool_name: str, arguments: Dict[str, Any]) -> str:
