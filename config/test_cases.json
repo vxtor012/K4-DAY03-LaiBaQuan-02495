@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "Chào bạn, bạn có thể giải thích nguyên tắc quản lý tài chính 50/30/20 là gì và áp dụng thế nào không?",
+    "expected_behavior": "Agent trả lời trực tiếp từ kiến thức nền tảng trong System Prompt, không cần gọi bất kỳ Tool nào.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Hãy tra cứu tình hình chi tiêu của danh mục 'Ăn uống' trong tháng này.",
+    "expected_behavior": "Agent nhận diện nhu cầu tra cứu, tự động phát sinh Tool Call 'query_expense' với tham số category='Ăn uống'.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "action_execution",
+    "question": "Ghi lại giúp tôi một khoản chi 45000 VNĐ cho 'Cà phê sáng' vào danh mục 'Ăn uống' ngày 13/09/2026.",
+    "expected_behavior": "Agent tự động phát sinh Tool Call 'add_expense' với đúng số tiền (45000), danh mục ('Ăn uống'), ghi chú ('Cà phê sáng') và ngày ('13/09/2026').",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "Tôi định mua một chiếc áo khoác giá 800000 VNĐ. Hãy kiểm tra xem ngân sách danh mục 'Mua sắm' tháng này còn lại bao nhiêu, có đủ để mua mà không bị thâm hụt không?",
+    "expected_behavior": "Agent thực hiện chuỗi suy luận ReAct: Gọi Tool 'query_expense' để kiểm tra hạn mức và số tiền đã chi của danh mục 'Mua sắm', tính toán số dư còn lại và đưa ra khuyến nghị tài chính chính xác.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Hãy kiểm tra tình hình chi tiêu của danh mục 'Du hành vũ trụ' giúp tôi.",
+    "expected_behavior": "Agent nhận kết quả NOT_FOUND từ Tool do danh mục không tồn tại và đưa ra phản hồi lịch sự, chính xác, không tự bịa đặt số liệu (Anti-Hallucination).",
+    "complexity": "Medium"
+  }
+]

@@ -1,8 +1,8 @@
 # 📊 BÁO CÁO THU HOẠCH NGHIỆM THU BÀI LAB 3 (BƯỚC 3 — SUBMISSION ARTIFACT)
 
-> **Họ và Tên Học viên:** [Điền Họ và Tên]  
-> **Mã Sinh Viên / Mã Học viên:** [Điền MSSV]  
-> **Chủ đề Lựa chọn:** [Điền tên chủ đề đã chọn từ docs/DANH_SACH_DE_TAI.md hoặc Đề tài Mở]  
+> **Họ và Tên Học viên:** Lại Bá Quân  
+> **Mã Sinh Viên / Mã Học viên:** 02495  
+> **Chủ đề Lựa chọn:** Trợ lý Tác tử Quản lý Chi tiêu Cá nhân (Personal Expense Management ReAct Agent)  
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Tiêu chí Đánh giá | Mức độ (1 - 5) | Giải trình chi tiết lý do chọn điểm |
 | :--- | :---: | :--- |
-| **1. Multi-step Reasoning** | / 5 | Bài toán có yêu cầu chia nhỏ nhiều bước suy luận nối tiếp nhau không? |
-| **2. Tool Interaction** | / 5 | Hệ thống có cần kết nối với MCP Server / Cơ sở dữ liệu bên ngoài không? |
-| **3. Dynamic Decision** | / 5 | Bước tiếp theo có phụ thuộc vào kết quả quan sát bước trước không? |
-| **4. Long Horizon Goal** | / 5 | Hệ thống có phải giữ mục tiêu xuyên suốt qua nhiều lượt xử lý không? |
-| **TỔNG ĐIỂM AGENTIC FIT** | **/ 20** | *Nếu tổng điểm > 12/20: Bài toán rất phù hợp triển khai Agentic System.* |
+| **1. Multi-step Reasoning** | 5 / 5 | Bài toán yêu cầu chuỗi suy luận đa bước: (1) Nhận diện ý định $\rightarrow$ (2) Tra cứu số dư/chi tiêu thực tế $\rightarrow$ (3) Tính toán số tiền sau giao dịch so với hạn mức ngân sách $\rightarrow$ (4) Đưa ra khuyến nghị hoặc cảnh báo thâm hụt. |
+| **2. Tool Interaction** | 5 / 5 | Bắt buộc tương tác với CSDL ví chi tiêu qua MCP Server. LLM không thể tự biết số dư, danh mục chi tiêu hay lịch sử chi tiêu nếu không gọi Tool `query_expense` và `add_expense`. |
+| **3. Dynamic Decision** | 5 / 5 | Quyết định bước tiếp theo phụ thuộc động vào dữ liệu trả về từ Observation: Nếu ngân sách còn đủ thì phản hồi tích cực/cho phép ghi nhận; nếu sắp vượt ngưỡng thì cảnh báo thắt chặt chi tiêu; nếu danh mục không tồn tại thì báo lỗi lịch sự. |
+| **4. Long Horizon Goal** | 4 / 5 | Hướng đến mục tiêu dài hạn là kiểm soát kỷ luật tài chính, tối ưu hóa ngân sách cá nhân theo chu kỳ tháng/năm và hỗ trợ người dùng đạt mục tiêu tiết kiệm. |
+| **TỔNG ĐIỂM AGENTIC FIT** | **19 / 20** | *Đạt 19/20 điểm (> 12/20): Bài toán cực kỳ phù hợp để triển khai Agentic System.* |
 
 ---
 

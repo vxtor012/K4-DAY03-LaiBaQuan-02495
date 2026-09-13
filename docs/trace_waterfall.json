@@ -3,9 +3,9 @@
     "step": 1,
     "query": "Chào bạn, bạn có thể giới thiệu quy chế học vụ cơ bản của Đại học VinUni không?",
     "action_type": "FINAL_ANSWER",
-    "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool.",
-    "output": "[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-    "latency_ms": 2845.93
+    "thought": "Gemini phản hồi trực tiếp bằng văn bản (không cần gọi công cụ).",
+    "output": "Chào bạn! Đại học VinUni áp dụng các quy chế học vụ chuẩn quốc tế, bám sát các tiêu chuẩn của các trường đại học hàng đầu thế giới (như Ivy League). Dưới đây là các điểm cơ bản trong quy chế học vụ tại VinUni:\n\n1. **Hệ thống đánh giá điểm số (GPA):**\n   * VinUni sử dụng thang điểm chữ (Letter Grades) từ A đến F, được quy đổi sang thang điểm 4.0 (GPA).\n   * Điểm tổng kết môn học bao gồm sự đánh giá toàn diện: chuyên cần, bài tập về nhà, các bài kiểm tra giữa kỳ, đồ án/dự án nhóm, và kỳ thi cuối kỳ.\n\n2. **Tiêu chuẩn học tập (Academic Standing):**\n   * Sinh viên cần duy trì mức Điểm trung bình tích lũy (CGPA) tối thiểu theo quy định của chương trình đào tạo (thường là từ 2.0/4.0 trở lên) để đảm bảo điều kiện tốt nghiệp và không rơi vào tình trạng cảnh cáo học vụ (Academic Probation).\n   * Nếu CGPA hoặc điểm kỳ học xuống dưới mức quy định, sinh viên sẽ nhận được sự hỗ trợ đặc biệt từ Cố vấn học tập (Academic Advisor) và Khoa.\n\n3. **Tín chỉ và Đăng ký môn học:**\n   * Chương trình học được thiết kế dựa trên hệ thống tín chỉ (Credits).\n   * Khối lượng học tập mỗi kỳ có giới hạn tối thiểu và tối đa để đảm bảo sức khỏe học tập và tiến độ ra trường đúng hạn.\n\n4. **Chính sách Liêm chính Học thuật (Academic Integrity):**\n   * VinUni rất coi trọng tính trung thực trong học tập và nghiên cứu. Các hành vi gian lận thi cử, đạo văn (plagiarism), hoặc giả mạo tài liệu đều bị xử lý nghiêm ngặt theo kỷ luật học vụ của nhà trường.\n\nNếu bạn cần tra cứu hồ sơ học vụ cá nhân hoặc muốn đặt lịch hẹn với Cố vấn học tập để được hướng dẫn chi tiết hơn, bạn có thể cho tôi biết mã sinh viên nhé!",
+    "latency_ms": 3458.93
   },
   {
     "step": 1,
@@ -16,7 +16,7 @@
       "student_id": "SV2026001"
     },
     "observation": {},
-    "latency_ms": 799.12
+    "latency_ms": 818.28
   },
   {
     "step": 2,
